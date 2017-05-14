@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author stefan
  */
-public class piggbbbb extends Funkcionalnosti{
+public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiGradiliste(String naziv, Date datumOsnivanja) {
