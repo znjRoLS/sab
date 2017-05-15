@@ -27,38 +27,86 @@ public class DBHelper {
         }
     }
 
-    public void insert(String command) {
+    public long insert(String command) {
         Statement stmt = null;
         try {
+            System.out.println("INFO: Executing insert: " + command);
+
             stmt = conn.createStatement();
-            stmt.execute(command);
+            int affectedRows = stmt.executeUpdate(command, Statement.RETURN_GENERATED_KEYS);
+            if (affectedRows == 0){
+                System.out.println("ERROR: insert failed!");
+                return -1;
+            }
+
+            SQLServerResultSet generatedKeys = (SQLServerResultSet)stmt.getGeneratedKeys();
+            generatedKeys.next();
+            return generatedKeys.getLong(1);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        return -1;
     }
 
-    public void insert(String tableName, String[] columnNames, String[] values) {
+    public boolean delete(String command) {
+        Statement stmt = null;
 
-        insert("insert into dbo.tiprobe (naziv) values('nesto');");
+        try {
+            System.out.println("INFO: Executing delete: " + command);
 
-//        StringBuilder command = new StringBuilder();
-//
-//        command.append("INSERT INTO ");
-//        command.append("[" + tableName + "]");
-//        command.append("(");
-//        for (String column : columnNames) {
-//            command.append(column + ",");
-//        }
-//        command.setLength(command.length() - 1);
-//        command.append(")");
-//        command.append(" values (");
-//        for (String value : values) {
-//            command.append("'" + value + "',");
-//        }
-//        command.setLength(command.length() - 1);
-//        command.append(");");
-//
-//        insert(command.toString());
+            stmt = conn.createStatement();
+            return stmt.execute(command);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+
+    public long insert(String tableName, String[] columnNames, String[] values) {
+
+        StringBuilder command = new StringBuilder();
+
+        command.append("INSERT INTO ");
+        command.append("[" + tableName + "]");
+        command.append("(");
+        for (String column : columnNames) {
+            command.append(column + ",");
+        }
+        command.setLength(command.length() - 1);
+        command.append(")");
+        command.append(" values (");
+        for (String value : values) {
+            command.append("'" + value + "',");
+        }
+        command.setLength(command.length() - 1);
+        command.append(");");
+
+        return insert(command.toString());
+    }
+
+
+    public boolean delete(String tableName, String[] columnNames, String[] values) {
+        StringBuilder command = new StringBuilder();
+
+        command.append("DELETE FROM ");
+        command.append("[" + tableName + "]");
+        command.append(" WHERE ");
+        for (int i = 0 ; i < columnNames.length ; i ++) {
+            if (i != 0) {
+                command.append(" AND ");
+            }
+            command.append(columnNames[i]);
+            command.append("=");
+            command.append(values[i]);
+        }
+        command.append(";");
+
+        return delete(command.toString());
     }
 
 }

@@ -149,15 +149,16 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiTipRobe(String naziv) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 
-        db.insert("dbo.TibRobe", new String[]{"Naziv"}, new String[]{naziv});
-        return 1;
+        return (int)db.insert("TipRobe", new String[]{"Naziv"}, new String[]{naziv});
     }
 
     @Override
     public int obrisiTipRobe(int idTipRobe) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+
+        db.delete("TipRobe", new String[]{"ID"}, new String[]{String.valueOf(idTipRobe)});
+
+        return idTipRobe;
     }
 
     @Override

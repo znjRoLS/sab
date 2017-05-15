@@ -25,6 +25,8 @@ public class Testiranje {
         int idAlat = funkcionalnosti.unesiTipRobe("alat");
         int idMaterijal = funkcionalnosti.unesiTipRobe("materijal");
 
+        System.out.println(idAlat);
+
 //        double procenata = JavniTest.test(funkcionalnosti);
 //        double koeficijentDomaci = 0.2;
 //        double koeficijentJavniTest = 0.5;

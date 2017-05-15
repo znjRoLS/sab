@@ -1,7 +1,7 @@
 
 CREATE TABLE [Firma]
 ( 
-	[ID]                 numeric  NOT NULL 
+	[ID]                 numeric  NOT NULL  IDENTITY 
 )
 go
 
@@ -11,7 +11,7 @@ go
 
 CREATE TABLE [Gradiliste]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Naziv]              varchar(50)  NULL ,
 	[DatumOsnivanja]     datetime  NULL ,
 	[BrojObjekata]       integer  NULL 
@@ -24,7 +24,7 @@ go
 
 CREATE TABLE [Magacin]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Plata]              decimal(10,3)  NULL ,
 	[Sef]                numeric  NULL ,
 	[Gradiliste]         numeric  NULL 
@@ -37,7 +37,7 @@ go
 
 CREATE TABLE [NormaUgradnogDela]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Naziv]              varchar(50)  NULL ,
 	[Cena]               decimal(10,3)  NULL ,
 	[Plata]              decimal(10,3)  NULL 
@@ -50,7 +50,7 @@ go
 
 CREATE TABLE [Objekat]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[BrojSpratova]       integer  NULL ,
 	[Gradiliste]         numeric  NOT NULL 
 )
@@ -125,7 +125,7 @@ go
 
 CREATE TABLE [Radnik]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Firma]              numeric  NULL ,
 	[Ime]                varchar(50)  NULL ,
 	[Prezime]            varchar(50)  NULL ,
@@ -149,7 +149,7 @@ go
 CREATE TABLE [Roba]
 ( 
 	[Naziv]              varchar(50)  NULL ,
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Kod]                varchar(10)  NULL ,
 	[Tip]                numeric  NULL 
 )
@@ -196,7 +196,7 @@ go
 
 CREATE TABLE [Sprat]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Objekat]            numeric  NOT NULL 
 )
 go
@@ -207,7 +207,7 @@ go
 
 CREATE TABLE [TipRobe]
 ( 
-	[ID]                 numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Naziv]              varchar(50)  NULL 
 )
 go
@@ -222,9 +222,9 @@ CREATE TABLE [Zaduzenje]
 	[DatumZaduzenja]     datetime  NULL ,
 	[DatumRazduzenja]    datetime  NULL ,
 	[Napomena]           varchar(200)  NULL ,
-	[Magacin]            numeric  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL 
+	[IDMagacin]          numeric  NOT NULL ,
+	[Jedinica]           integer  NULL 
 )
 go
 
@@ -362,12 +362,6 @@ go
 
 ALTER TABLE [Zaduzenje]
 	ADD CONSTRAINT [R_23] FOREIGN KEY ([IDRadnik]) REFERENCES [Radnik]([ID])
-		ON DELETE NO ACTION
-		ON UPDATE NO ACTION
-go
-
-ALTER TABLE [Zaduzenje]
-	ADD CONSTRAINT [R_25] FOREIGN KEY ([Magacin]) REFERENCES [Magacin]([ID])
 		ON DELETE NO ACTION
 		ON UPDATE NO ACTION
 go
