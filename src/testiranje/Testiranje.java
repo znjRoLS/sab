@@ -21,15 +21,19 @@ public class Testiranje {
     public static void main(String[] args) {
         Funkcionalnosti funkcionalnosti = new rb130102();
 
-        double procenata = JavniTest.test(funkcionalnosti);
-        double koeficijentDomaci = 0.2;
-        double koeficijentJavniTest = 0.5;
-        double koeficijentTajniTestovi = 0.5;
-        
-        System.out.println();
-        System.out.println("==============================================");
-        System.out.println("Na javnom testu osvojili ste " + procenata * koeficijentDomaci * koeficijentJavniTest + " poena");
-        System.out.println("==============================================");
+        int idHTZ = funkcionalnosti.unesiTipRobe("HTZ");
+        int idAlat = funkcionalnosti.unesiTipRobe("alat");
+        int idMaterijal = funkcionalnosti.unesiTipRobe("materijal");
+
+//        double procenata = JavniTest.test(funkcionalnosti);
+//        double koeficijentDomaci = 0.2;
+//        double koeficijentJavniTest = 0.5;
+//        double koeficijentTajniTestovi = 0.5;
+//
+//        System.out.println();
+//        System.out.println("==============================================");
+//        System.out.println("Na javnom testu osvojili ste " + procenata * koeficijentDomaci * koeficijentJavniTest + " poena");
+//        System.out.println("==============================================");
     }
     
 }

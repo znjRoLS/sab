@@ -16,6 +16,12 @@ import java.util.List;
  */
 public class rb130102 extends Funkcionalnosti{
 
+    DBHelper db;
+
+    public rb130102() {
+        db = new DBHelper();
+    }
+
     @Override
     public int unesiGradiliste(String naziv, Date datumOsnivanja) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -143,7 +149,10 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiTipRobe(String naziv) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+
+        db.insert("dbo.TibRobe", new String[]{"Naziv"}, new String[]{naziv});
+        return 1;
     }
 
     @Override
