@@ -65,30 +65,25 @@ CREATE TABLE [Posao]
 	[IDSprat]            numeric  NOT NULL ,
 	[IDNorma]            numeric  NOT NULL ,
 	[DatumPocetka]       datetime  NULL ,
-	[DatumKraja]         datetime  NULL 
+	[DatumKraja]         datetime  NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY ,
+	[Status]             char  NULL 
+	CONSTRAINT [Default_Value_Posao_U_Toku]
+		 DEFAULT  'U'
+	CONSTRAINT [Validation_Rule_Status]
+		CHECK  ( Status = 'U' OR Status = 'Z' )
 )
 go
 
 ALTER TABLE [Posao]
-	ADD CONSTRAINT [XPKPosao] PRIMARY KEY  CLUSTERED ([IDSprat] ASC,[IDNorma] ASC)
-go
-
-CREATE TABLE [PotrosniMaterijal]
-( 
-	[IDNorma]            numeric  NOT NULL ,
-	[IDRoba]             numeric  NOT NULL 
-)
-go
-
-ALTER TABLE [PotrosniMaterijal]
-	ADD CONSTRAINT [XPKPotrosniMaterijal] PRIMARY KEY  CLUSTERED ([IDNorma] ASC,[IDRoba] ASC)
+	ADD CONSTRAINT [XPKPosao] PRIMARY KEY  CLUSTERED ([ID] ASC)
 go
 
 CREATE TABLE [PotrosniMaterijalJedinica]
 ( 
+	[Jedinica]           integer  NULL ,
 	[IDNorma]            numeric  NOT NULL ,
-	[IDRoba]             numeric  NOT NULL ,
-	[Jedinica]           integer  NULL 
+	[IDRoba]             numeric  NOT NULL 
 )
 go
 
@@ -98,29 +93,28 @@ go
 
 CREATE TABLE [PotrosniMaterijalKolicina]
 ( 
-	[IDNorma]            numeric  NOT NULL ,
+	[Kolicina]           decimal(10,3)  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[Kolicina]           decimal(10,3)  NULL 
+	[IDNorma]            numeric  NOT NULL 
 )
 go
 
 ALTER TABLE [PotrosniMaterijalKolicina]
-	ADD CONSTRAINT [XPKPotrosniMaterijalKolicina] PRIMARY KEY  CLUSTERED ([IDNorma] ASC,[IDRoba] ASC)
+	ADD CONSTRAINT [XPKPotrosniMaterijalKolicina] PRIMARY KEY  CLUSTERED ([IDRoba] ASC,[IDNorma] ASC)
 go
 
 CREATE TABLE [RadNaPoslu]
 ( 
 	[IDRadnik]           numeric  NOT NULL ,
-	[IDSprat]            numeric  NOT NULL ,
-	[IDNorma]            numeric  NOT NULL ,
 	[Ocena]              integer  NULL ,
 	[DatumPocetka]       datetime  NULL ,
-	[DatumKraja]         datetime  NULL 
+	[DatumKraja]         datetime  NULL ,
+	[IDPosao]            numeric  NOT NULL 
 )
 go
 
 ALTER TABLE [RadNaPoslu]
-	ADD CONSTRAINT [XPKRadNaPoslu] PRIMARY KEY  CLUSTERED ([IDRadnik] ASC,[IDSprat] ASC,[IDNorma] ASC)
+	ADD CONSTRAINT [XPKRadNaPoslu] PRIMARY KEY  CLUSTERED ([IDRadnik] ASC,[IDPosao] ASC)
 go
 
 CREATE TABLE [Radnik]
@@ -159,22 +153,11 @@ ALTER TABLE [Roba]
 	ADD CONSTRAINT [XPKRoba] PRIMARY KEY  CLUSTERED ([ID] ASC)
 go
 
-CREATE TABLE [Sadrzi]
-( 
-	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL 
-)
-go
-
-ALTER TABLE [Sadrzi]
-	ADD CONSTRAINT [XPKSadrzi] PRIMARY KEY  CLUSTERED ([IDRoba] ASC,[IDMagacin] ASC)
-go
-
 CREATE TABLE [SadrziJedinica]
 ( 
+	[Jedinica]           integer  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL ,
-	[Jedinica]           integer  NULL 
+	[IDMagacin]          numeric  NOT NULL 
 )
 go
 
@@ -184,9 +167,9 @@ go
 
 CREATE TABLE [SadrziKolicinu]
 ( 
+	[Kolicina]           decimal(10,3)  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL ,
-	[Kolicina]           decimal(10,3)  NULL 
+	[IDMagacin]          numeric  NOT NULL 
 )
 go
 
@@ -197,12 +180,17 @@ go
 CREATE TABLE [Sprat]
 ( 
 	[ID]                 numeric  NOT NULL  IDENTITY ,
-	[Objekat]            numeric  NOT NULL 
+	[Objekat]            numeric  NOT NULL ,
+	[RedniBroj]          integer  NULL 
 )
 go
 
 ALTER TABLE [Sprat]
 	ADD CONSTRAINT [XPKSprat] PRIMARY KEY  CLUSTERED ([ID] ASC)
+go
+
+ALTER TABLE [Sprat]
+	ADD CONSTRAINT [XIF2Sprat] UNIQUE ([RedniBroj]  ASC)
 go
 
 CREATE TABLE [TipRobe]
@@ -222,9 +210,9 @@ CREATE TABLE [Zaduzenje]
 	[DatumZaduzenja]     datetime  NULL ,
 	[DatumRazduzenja]    datetime  NULL ,
 	[Napomena]           varchar(200)  NULL ,
+	[Jedinica]           integer  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL ,
-	[Jedinica]           integer  NULL 
+	[IDMagacin]          numeric  NOT NULL 
 )
 go
 
@@ -266,30 +254,29 @@ ALTER TABLE [Posao]
 go
 
 
-ALTER TABLE [PotrosniMaterijal]
-	ADD CONSTRAINT [R_36] FOREIGN KEY ([IDNorma]) REFERENCES [NormaUgradnogDela]([ID])
+ALTER TABLE [PotrosniMaterijalJedinica]
+	ADD CONSTRAINT [R_46] FOREIGN KEY ([IDNorma]) REFERENCES [NormaUgradnogDela]([ID])
 		ON DELETE NO ACTION
-		ON UPDATE CASCADE
+		ON UPDATE NO ACTION
 go
-
-ALTER TABLE [PotrosniMaterijal]
-	ADD CONSTRAINT [R_37] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
-		ON DELETE NO ACTION
-		ON UPDATE CASCADE
-go
-
 
 ALTER TABLE [PotrosniMaterijalJedinica]
-	ADD CONSTRAINT [R_39] FOREIGN KEY ([IDNorma],[IDRoba]) REFERENCES [PotrosniMaterijal]([IDNorma],[IDRoba])
+	ADD CONSTRAINT [R_47] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
 		ON DELETE NO ACTION
-		ON UPDATE CASCADE
+		ON UPDATE NO ACTION
 go
 
 
 ALTER TABLE [PotrosniMaterijalKolicina]
-	ADD CONSTRAINT [R_38] FOREIGN KEY ([IDNorma],[IDRoba]) REFERENCES [PotrosniMaterijal]([IDNorma],[IDRoba])
+	ADD CONSTRAINT [R_48] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
 		ON DELETE NO ACTION
-		ON UPDATE CASCADE
+		ON UPDATE NO ACTION
+go
+
+ALTER TABLE [PotrosniMaterijalKolicina]
+	ADD CONSTRAINT [R_49] FOREIGN KEY ([IDNorma]) REFERENCES [NormaUgradnogDela]([ID])
+		ON DELETE NO ACTION
+		ON UPDATE NO ACTION
 go
 
 
@@ -300,7 +287,7 @@ ALTER TABLE [RadNaPoslu]
 go
 
 ALTER TABLE [RadNaPoslu]
-	ADD CONSTRAINT [R_35] FOREIGN KEY ([IDSprat],[IDNorma]) REFERENCES [Posao]([IDSprat],[IDNorma])
+	ADD CONSTRAINT [R_35] FOREIGN KEY ([IDPosao]) REFERENCES [Posao]([ID])
 		ON DELETE NO ACTION
 		ON UPDATE CASCADE
 go
@@ -326,30 +313,29 @@ ALTER TABLE [Roba]
 go
 
 
-ALTER TABLE [Sadrzi]
-	ADD CONSTRAINT [R_15] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
+ALTER TABLE [SadrziJedinica]
+	ADD CONSTRAINT [R_41] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
 		ON DELETE NO ACTION
 		ON UPDATE NO ACTION
 go
-
-ALTER TABLE [Sadrzi]
-	ADD CONSTRAINT [R_16] FOREIGN KEY ([IDMagacin]) REFERENCES [Magacin]([ID])
-		ON DELETE NO ACTION
-		ON UPDATE NO ACTION
-go
-
 
 ALTER TABLE [SadrziJedinica]
-	ADD CONSTRAINT [R_17] FOREIGN KEY ([IDRoba],[IDMagacin]) REFERENCES [Sadrzi]([IDRoba],[IDMagacin])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE
+	ADD CONSTRAINT [R_42] FOREIGN KEY ([IDMagacin]) REFERENCES [Magacin]([ID])
+		ON DELETE NO ACTION
+		ON UPDATE NO ACTION
 go
 
 
 ALTER TABLE [SadrziKolicinu]
-	ADD CONSTRAINT [R_18] FOREIGN KEY ([IDRoba],[IDMagacin]) REFERENCES [Sadrzi]([IDRoba],[IDMagacin])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE
+	ADD CONSTRAINT [R_43] FOREIGN KEY ([IDRoba]) REFERENCES [Roba]([ID])
+		ON DELETE NO ACTION
+		ON UPDATE NO ACTION
+go
+
+ALTER TABLE [SadrziKolicinu]
+	ADD CONSTRAINT [R_44] FOREIGN KEY ([IDMagacin]) REFERENCES [Magacin]([ID])
+		ON DELETE NO ACTION
+		ON UPDATE NO ACTION
 go
 
 
@@ -367,7 +353,7 @@ ALTER TABLE [Zaduzenje]
 go
 
 ALTER TABLE [Zaduzenje]
-	ADD CONSTRAINT [R_26] FOREIGN KEY ([IDRoba],[IDMagacin]) REFERENCES [Sadrzi]([IDRoba],[IDMagacin])
+	ADD CONSTRAINT [R_45] FOREIGN KEY ([IDRoba],[IDMagacin]) REFERENCES [SadrziJedinica]([IDRoba],[IDMagacin])
 		ON DELETE NO ACTION
 		ON UPDATE NO ACTION
 go
