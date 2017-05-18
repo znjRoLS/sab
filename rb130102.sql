@@ -83,24 +83,26 @@ CREATE TABLE [PotrosniMaterijalJedinica]
 ( 
 	[Jedinica]           integer  NULL ,
 	[IDNorma]            numeric  NOT NULL ,
-	[IDRoba]             numeric  NOT NULL 
+	[IDRoba]             numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY 
 )
 go
 
 ALTER TABLE [PotrosniMaterijalJedinica]
-	ADD CONSTRAINT [XPKPotrosniMaterijalJedinica] PRIMARY KEY  CLUSTERED ([IDNorma] ASC,[IDRoba] ASC)
+	ADD CONSTRAINT [XPKPotrosniMaterijalJedinica] PRIMARY KEY  CLUSTERED ([IDNorma] ASC,[IDRoba] ASC,[ID] ASC)
 go
 
 CREATE TABLE [PotrosniMaterijalKolicina]
 ( 
 	[Kolicina]           decimal(10,3)  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDNorma]            numeric  NOT NULL 
+	[IDNorma]            numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY 
 )
 go
 
 ALTER TABLE [PotrosniMaterijalKolicina]
-	ADD CONSTRAINT [XPKPotrosniMaterijalKolicina] PRIMARY KEY  CLUSTERED ([IDRoba] ASC,[IDNorma] ASC)
+	ADD CONSTRAINT [XPKPotrosniMaterijalKolicina] PRIMARY KEY  CLUSTERED ([IDRoba] ASC,[IDNorma] ASC,[ID] ASC)
 go
 
 CREATE TABLE [RadNaPoslu]
@@ -109,12 +111,13 @@ CREATE TABLE [RadNaPoslu]
 	[Ocena]              integer  NULL ,
 	[DatumPocetka]       datetime  NULL ,
 	[DatumKraja]         datetime  NULL ,
-	[IDPosao]            numeric  NOT NULL 
+	[IDPosao]            numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY 
 )
 go
 
 ALTER TABLE [RadNaPoslu]
-	ADD CONSTRAINT [XPKRadNaPoslu] PRIMARY KEY  CLUSTERED ([IDRadnik] ASC,[IDPosao] ASC)
+	ADD CONSTRAINT [XPKRadNaPoslu] PRIMARY KEY  CLUSTERED ([IDRadnik] ASC,[IDPosao] ASC,[ID] ASC)
 go
 
 CREATE TABLE [Radnik]
@@ -124,7 +127,9 @@ CREATE TABLE [Radnik]
 	[Ime]                varchar(50)  NULL ,
 	[Prezime]            varchar(50)  NULL ,
 	[JMBG]               char(13)  NULL ,
-	[Pol]                char  NULL ,
+	[Pol]                char  NULL 
+	CONSTRAINT [Validation_Rule_Pol]
+		CHECK  ( pol = 'M' OR pol = 'Z' ),
 	[ZiroRacun]          varchar(25)  NULL ,
 	[Email]              varchar(50)  NULL ,
 	[Telefon]            varchar(11)  NULL ,
@@ -212,12 +217,13 @@ CREATE TABLE [Zaduzenje]
 	[Napomena]           varchar(200)  NULL ,
 	[Jedinica]           integer  NULL ,
 	[IDRoba]             numeric  NOT NULL ,
-	[IDMagacin]          numeric  NOT NULL 
+	[IDMagacin]          numeric  NOT NULL ,
+	[ID]                 numeric  NOT NULL  IDENTITY 
 )
 go
 
 ALTER TABLE [Zaduzenje]
-	ADD CONSTRAINT [XPKZaduzenje] PRIMARY KEY  CLUSTERED ([IDRadnik] ASC,[IDRoba] ASC,[IDMagacin] ASC)
+	ADD CONSTRAINT [XPKZaduzenje] PRIMARY KEY  CLUSTERED ([ID] ASC)
 go
 
 
