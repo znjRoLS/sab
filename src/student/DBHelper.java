@@ -26,7 +26,7 @@ public class DBHelper {
             conn = DriverManager.getConnection(connectionString);
 
         } catch(Exception e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
     }
 
@@ -48,7 +48,7 @@ public class DBHelper {
             return generatedKeys.getLong(1);
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
 
         return -1;
@@ -64,7 +64,7 @@ public class DBHelper {
             return stmt.execute(command);
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
 
         return false;
@@ -88,7 +88,7 @@ public class DBHelper {
                 List<String> arrayString = new ArrayList<>();
 
                 for(int i = 0 ; i < numColumns; i++) {
-                    arrayString.add(rs.getString(i));
+                    arrayString.add(rs.getString(i+1));
                 }
 
                 arrayList.add(arrayString);
@@ -97,12 +97,12 @@ public class DBHelper {
             return arrayList;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
         return null;
     }
 
-    public long update(String command) {
+    public boolean update(String command) {
         Statement stmt = null;
         try {
             System.out.println("INFO: Executing update: " + command);
@@ -111,18 +111,18 @@ public class DBHelper {
             int affectedRows = stmt.executeUpdate(command, Statement.RETURN_GENERATED_KEYS);
             if (affectedRows == 0){
                 System.out.println("ERROR: update failed!");
-                return -1;
+                return false;
             }
 
-            SQLServerResultSet generatedKeys = (SQLServerResultSet)stmt.getGeneratedKeys();
-            generatedKeys.next();
-            return generatedKeys.getLong(1);
-
+            //SQLServerResultSet generatedKeys = (SQLServerResultSet)stmt.getGeneratedKeys();
+            //generatedKeys.next();
+            //return generatedKeys.getLong(1);
+            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
 
-        return -1;
+        return false;
     }
 
     public int insert(String tableName, String[] columnNames, String[] values) {
@@ -158,16 +158,18 @@ public class DBHelper {
             if (i != 0) {
                 command.append(" AND ");
             }
-            command.append(columnNames[i]);
-            command.append("=");
-            command.append(values[i]);
+            if (values[i] == "null") {
+                command.append(columnNames[i] + " IS NULL ");
+            } else {
+                command.append(columnNames[i] + " = '" + values[i] + "'" );
+            }
         }
         command.append(";");
 
         return delete(command.toString());
     }
 
-    public int update(String tableName, String[] columnNames, String[] values, String[] projection, String[] projectionvalues) {
+    public boolean update(String tableName, String[] columnNames, String[] values, String[] projection, String[] projectionvalues) {
 
         StringBuilder command = new StringBuilder();
 
@@ -175,43 +177,54 @@ public class DBHelper {
         command.append("[" + tableName + "]");
         command.append(" SET ");
         for (int i = 0; i < columnNames.length; i ++) {
-            command.append(columnNames[i] + " = " + values[i] + ",");
+            command.append(columnNames[i] + " = '" + values[i] + "',");
         }
         command.setLength(command.length() - 1);
-        if (projection.length > 0) {
+        if (projection != null && projection.length > 0) {
             command.append(" WHERE ");
             for (int i = 0 ; i < projection.length; i ++) {
                 if (i != 0) {
                     command.append(" AND ");
                 }
-                command.append(projection[i] + " = " + projectionvalues[i] );
+                if (values[i] == "null") {
+                    command.append(projection[i] + " IS NULL ");
+                } else {
+                    command.append(projection[i] + " = '" + projectionvalues[i] + "'" );
+                }
+
             }
         }
-        command.append(");");
+        command.append(";");
 
-        return (int)update(command.toString());
+        return update(command.toString());
     }
 
     public List<List<String>> select(String tableName, String[] columnNames, String[] projection, String[] values) {
         StringBuilder command = new StringBuilder();
 
-        command.append("SELECT FROM ");
-        command.append("[" + tableName + "]");
+        command.append("SELECT ");
 
-        command.append(" (");
+
         for (String column : columnNames) {
             command.append(column + ",");
         }
         command.setLength(command.length() - 1);
-        command.append(") ");
 
-        if (projection.length > 0) {
+        command.append(" FROM ");
+        command.append("[" + tableName + "]");
+
+        if (projection != null && projection.length > 0) {
             command.append(" WHERE ");
             for (int i = 0 ; i < projection.length; i ++) {
                 if (i != 0) {
                     command.append(" AND ");
                 }
-                command.append(projection[i] + " = " + values[i] );
+                if (values[i] == "null") {
+                    command.append(projection[i] + " IS NULL ");
+                } else {
+                    command.append(projection[i] + " = '" + values[i] + "'" );
+                }
+
             }
         }
 
@@ -228,19 +241,22 @@ public class DBHelper {
                 command.append("?,");
             }
             command.setLength(command.length() - 1);
-            command.append(")");
+            command.append(")}");
 
             CallableStatement stmt = conn.prepareCall(command.toString());
 
             for(int i = 0 ; i < parameters.length; i ++) {
                 stmt.setString(i+1, parameters[i]);
+                System.out.println("Parameter: " + parameters[i]);
             }
+
+            System.out.println("INFO: Executing call: " + command);
 
             stmt.execute();
 
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e);
             return false;
         }
     }

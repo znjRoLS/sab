@@ -1,3 +1,4 @@
+use sab;
 
 CREATE TABLE [Firma]
 ( 
@@ -25,7 +26,9 @@ go
 CREATE TABLE [Magacin]
 ( 
 	[ID]                 numeric  NOT NULL  IDENTITY ,
-	[Plata]              decimal(10,3)  NULL ,
+	[Plata]              decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_1094223414]
+		 DEFAULT  0,
 	[Sef]                numeric  NULL ,
 	[Gradiliste]         numeric  NULL 
 )
@@ -39,8 +42,12 @@ CREATE TABLE [NormaUgradnogDela]
 ( 
 	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[Naziv]              varchar(50)  NULL ,
-	[Cena]               decimal(10,3)  NULL ,
+	[Cena]               decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_1515740834]
+		 DEFAULT  0,
 	[Plata]              decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_1345616441]
+		 DEFAULT  0
 )
 go
 
@@ -52,7 +59,8 @@ CREATE TABLE [Objekat]
 ( 
 	[ID]                 numeric  NOT NULL  IDENTITY ,
 	[BrojSpratova]       integer  NULL ,
-	[Gradiliste]         numeric  NOT NULL 
+	[Gradiliste]         numeric  NOT NULL ,
+	[Naziv]              varchar(50)  NULL 
 )
 go
 
@@ -94,7 +102,9 @@ go
 
 CREATE TABLE [PotrosniMaterijalKolicina]
 ( 
-	[Kolicina]           decimal(10,3)  NULL ,
+	[Kolicina]           decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_97904569]
+		 DEFAULT  0,
 	[IDRoba]             numeric  NOT NULL ,
 	[IDNorma]            numeric  NOT NULL ,
 	[ID]                 numeric  NOT NULL  IDENTITY 
@@ -133,9 +143,13 @@ CREATE TABLE [Radnik]
 	[ZiroRacun]          varchar(25)  NULL ,
 	[Email]              varchar(50)  NULL ,
 	[Telefon]            varchar(11)  NULL ,
-	[ProsecnaOcena]      decimal(10,3)  NULL ,
+	[ProsecnaOcena]      decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_1853017771]
+		 DEFAULT  0,
 	[ZaduzenaOprema]     integer  NULL ,
-	[UkupnoIsplacenIznos] decimal(10,3)  NULL ,
+	[UkupnoIsplacenIznos] decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_15663301]
+		 DEFAULT  0,
 	[Magacin]            numeric  NULL ,
 	[RadiTrenutnoNaPoslu] bit  NULL 
 )
@@ -172,7 +186,9 @@ go
 
 CREATE TABLE [SadrziKolicinu]
 ( 
-	[Kolicina]           decimal(10,3)  NULL ,
+	[Kolicina]           decimal(10,3)  NULL 
+	CONSTRAINT [Default_Value_608_1224680849]
+		 DEFAULT  0,
 	[IDRoba]             numeric  NOT NULL ,
 	[IDMagacin]          numeric  NOT NULL 
 )

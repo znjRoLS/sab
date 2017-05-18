@@ -34,3 +34,44 @@ select * from gradiliste;
 
 
 alter table sprat add rednibroj int;
+
+use sab;
+
+select * from sadrzijedinica;
+
+execute dbo.PovecajRobuJedinica 1,2,3000 ;
+
+INSERT INTO [Zaduzenje](IDRadnik,IDMagacin,IDRoba,DatumZaduzenja,Napomena) values ('3','1','9','2016-06-10','...')
+
+select * from zaduzenje;
+ UPDATE [Zaduzenje] SET datumRazduzenja = '2016-08-01' WHERE ID = 1;
+
+ UPDATE [Posao] SET DatumKraja = '2016-11-25',Status = 'Z' WHERE ID = '1';
+ 
+ select * from radnaposlu;
+
+ use sab;
+
+ select  * from radnik;
+
+ select * from radnaposlu;
+
+
+ select * from zaduzenje;
+
+ SELECT UkupnoIsplacenIznos FROM [Radnik] WHERE ID = '1'
+
+ SELECT ID FROM [Zaduzenje] WHERE IDRadnik = '3' AND DatumRazduzenja IS NULL 
+
+ select * from magacin;
+ select * from sadrzijedinica;
+
+ UPDATE [RadNaPoslu] SET ocena = '8' WHERE ID = '3';
+
+ update posao set datumkraja='2017-12-10', status='Z' WHERE ID=2;
+
+ select * from NormaUgradnogDela;
+
+ select * from posao;
+
+ UPDATE [Posao] SET DatumKraja = '2016-11-25',Status = 'Z' WHERE ID = '1';

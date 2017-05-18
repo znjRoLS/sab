@@ -50,14 +50,18 @@ AS BEGIN
 		IF NOT EXISTS(
 		SELECT * FROM [SadrziJedinica] 
 		WHERE IDRoba = @idroba AND IDMagacin = @idmagacin)
+		BEGIN
 			ROLLBACK TRANSACTION;
-		ELSE
+			THROW 51000,  'Trying to zaduziti where there is not roba in magacin', 1;
+		END ELSE
 			IF ((
 			SELECT Jedinica FROM [SadrziJedinica] 
 			WHERE IDRoba = @idroba AND IDMagacin = @idmagacin
 			) < @jedinica)
+			BEGIN
 				ROLLBACK TRANSACTION;
-			ELSE 
+				THROW 51000,  ' Not enough roba in magacin for zaduzenje', 1;
+			END ELSE 
 				UPDATE [SadrziJedinica] 
 				SET Jedinica = Jedinica - @jedinica
 				WHERE IDRoba = @idroba AND IDMagacin = @idmagacin;
@@ -67,6 +71,62 @@ AS BEGIN
 
 	--DELETE FROM [SadrziJedinica] WHERE Jedinica = 0;
 	-- should be in another trigger!
+
+
+	-- razduzio
+	SET @cursor = CURSOR FOR
+	SELECT d.IDRoba, d.IDMagacin, d.Jedinica FROM deleted d
+	JOIN inserted i ON d.IDRoba = i.IDRoba AND d.IDMagacin = i.IDMagacin
+	WHERE d.DatumRazduzenja IS NULL
+	AND i.DatumRazduzenja IS NOT NULL;
+
+	OPEN @cursor;
+
+	FETCH NEXT FROM @cursor INTO @idroba, @idmagacin, @jedinica;
+
+	WHILE @@FETCH_STATUS = 0 
+	BEGIN
+		IF NOT EXISTS(
+		SELECT * FROM [SadrziJedinica] 
+		WHERE IDRoba = @idroba AND IDMagacin = @idmagacin)
+			INSERT INTO [SadrziJedinica] (IDRoba, IDMagacin, Jedinica) 
+			VALUES (@idroba, @idmagacin, @jedinica);
+		ELSE
+			UPDATE [SadrziJedinica] 
+			SET Jedinica = Jedinica + @jedinica
+			WHERE IDRoba = @idroba AND IDMagacin = @idmagacin;
+
+		FETCH NEXT FROM @cursor INTO @idroba, @idmagacin, @jedinica;
+	END
+
+	CLOSE @cursor;
+	DEALLOCATE @cursor;
+
+
+	if EXISTS(
+		SELECT d.IDRoba, d.IDMagacin, d.Jedinica FROM deleted d
+		JOIN inserted i ON d.IDRoba = i.IDRoba AND d.IDMagacin = i.IDMagacin
+		WHERE (d.DatumRazduzenja IS NOT NULL
+		AND i.DatumRazduzenja IS NULL)
+		)
+	BEGIN
+		ROLLBACK TRANSACTION;
+		THROW 51000,  'Not allowed to delete datumrazduzenja', 1;
+	END
+
+	ELSE
+
+		IF EXISTS(
+			SELECT * FROM inserted
+			WHERE (DatumRazduzenja < DatumZaduzenja)
+			)
+		BEGIN
+			SELECT * FROM inserted
+			WHERE (DatumRazduzenja < DatumZaduzenja);
+			ROLLBACK TRANSACTION;
+			THROW 51000,  'Not allowed to set datumrazduzenja before datumrazduzenja', 1;
+		END
+
 END
 
 
@@ -79,9 +139,11 @@ AS BEGIN
 		SELECT * FROM [SadrziJedinica]
 		WHERE Jedinica < 0
 	)
-
+	BEGIN
 		ROLLBACK TRANSACTION;
-	DELETE FROM [SadrziJedinica] WHERE Jedinica = 0;
+		THROW 51000,  'Negative jedinica in Magacin!', 1;
+	END ELSE
+		DELETE FROM [SadrziJedinica] WHERE Jedinica = 0;
 END
 
 GO
@@ -93,8 +155,11 @@ AS BEGIN
 		SELECT * FROM [SadrziKolicinu]
 		WHERE Kolicina < 0
 	)
+	BEGIN
 		ROLLBACK TRANSACTION;
-	DELETE FROM [SadrziKolicinu] WHERE Kolicina = 0;
+		THROW 51000,  'Negative kolicina in magacin!', 1;
+	END ELSE
+		DELETE FROM [SadrziKolicinu] WHERE Kolicina = 0;
 END
 
 GO
@@ -142,44 +207,53 @@ AS BEGIN
 	DECLARE @aggregatedFloors table( objekat int, countInserted int);
 
 	-- check if ordered floors
-	IF EXISTS( SELECT * FROM inserted UNION SELECT * FROM deleted WHERE rednibroj  < 0) ROLLBACK TRANSACTION;
-	IF EXISTS( 
-		SELECT * FROM (
-			SELECT sum(rednibroj) suma, (count(*) * (count(*) - 1)) / 2 pravasuma
-			FROM [Sprat] s
-			JOIN (SELECT objekat FROM inserted UNION SELECT objekat FROM deleted) j
-			ON s.objekat = j.objekat
-			GROUP BY s.objekat) o
-		WHERE o.suma <> o.pravasuma)
-
+	IF EXISTS( SELECT * FROM inserted WHERE rednibroj < 0 UNION SELECT * FROM deleted WHERE rednibroj  < 0) 
+	BEGIN
 		ROLLBACK TRANSACTION;
+		THROW 51000,  'Sprat cannot have negative floor number', 1;
+
+	END ELSE BEGIN
+		IF EXISTS( 
+			SELECT * FROM (
+				SELECT sum(rednibroj) suma, (count(*) * (count(*) - 1)) / 2 pravasuma
+				FROM [Sprat] s
+				JOIN (SELECT objekat FROM inserted UNION SELECT objekat FROM deleted) j
+				ON s.objekat = j.objekat
+				GROUP BY s.objekat) o
+			WHERE o.suma <> o.pravasuma)
+		BEGIN
+
+			ROLLBACK TRANSACTION;
+			THROW 51000,  'Spratovi not in increasing order!', 1;
+
+		END ELSE BEGIN
+			INSERT INTO @aggregatedFloors
+			SELECT 
+				CASE
+					WHEN i.objekat IS NULL
+					THEN d.objekat
+					ELSE i.objekat
+				END
+				objekat,
+				COALESCE(i.cnt,0) - COALESCE(d.cnt,0) countInserted
+				FROM 
+					(SELECT objekat, count(*) cnt 
+						FROM inserted
+						GROUP BY objekat) i
+				FULL JOIN
+					(SELECT objekat, count(*) cnt
+						FROM deleted
+						GROUP BY objekat) d
+				ON i.objekat = d.objekat;
 
 
-	INSERT INTO @aggregatedFloors
-	SELECT 
-		CASE
-			WHEN i.objekat IS NULL
-			THEN d.objekat
-			ELSE i.objekat
+			UPDATE g
+			SET g.BrojSpratova = g.BrojSpratova + a.countInserted
+			FROM [Objekat] g
+			JOIN @aggregatedFloors a
+			ON g.id = a.objekat;
 		END
-		objekat,
-		COALESCE(i.cnt,0) - COALESCE(d.cnt,0) countInserted
-		FROM 
-			(SELECT objekat, count(*) cnt 
-				FROM inserted
-				GROUP BY objekat) i
-		FULL JOIN
-			(SELECT objekat, count(*) cnt
-				FROM deleted
-				GROUP BY objekat) d
-		ON i.objekat = d.objekat;
-
-
-	UPDATE g
-	SET g.BrojSpratova = g.BrojSpratova + a.countInserted
-	FROM [Objekat] g
-	JOIN @aggregatedFloors a
-	ON g.id = a.objekat;
+	END
 	
 END
 
@@ -198,10 +272,11 @@ AS BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		UPDATE Radnik SET ProsecnaOcena = (
-			SELECT AVG(Ocena) FROM RadNaPoslu 
+			SELECT SUM(Ocena)/1.0/count(*) FROM RadNaPoslu 
 			WHERE Ocena IS NOT NULL 
 			AND IDRadnik = @idradnik
-		);
+		)
+		WHERE ID = @idradnik;
 		FETCH NEXT FROM @cursor into @idradnik;
 	END
 END
@@ -218,7 +293,10 @@ AS BEGIN
 			) AS a
 		WHERE a.cnt > 1
 		)
+	BEGIN
 		ROLLBACK TRANSACTION;
+		THROW 51000,  'Gradiliste cannot have more than 1 magacin', 1;
+	END
 END
 
 
@@ -396,8 +474,10 @@ AS BEGIN
 		AND (rad.DatumKraja IS NULL
 		OR rad.DatumKraja > posao.DatumKraja)
 	)
+	BEGIN
 		ROLLBACK TRANSACTION;
-		PRINT 'Not allowed to close job untill all workers have finished working, or finish job earlier than workers'
+		THROW 51000,  'Not allowed to close job untill all workers have finished working, or finish job earlier than workers', 1;
+	END
 END
 
 
@@ -417,7 +497,7 @@ AS BEGIN
 	)
 	BEGIN
 		ROLLBACK TRANSACTION;
-		PRINT 'Not allowed to set worker end day to null or after closed job date'
+		THROW 51000,  'Not allowed to set worker end day to null or after closed job date', 1;
 	END
 	ELSE
 		IF EXISTS (
@@ -429,14 +509,14 @@ AS BEGIN
 		)
 		BEGIN
 			ROLLBACK TRANSACTION;
-			PRINT 'Cannot set worker start date before job start date'
+			THROW 51000,  'Cannot set worker start date before job start date', 1;
 		END
 		ELSE IF EXISTS (
 			SELECT * FROM inserted rad
 			WHERE rad.DatumKraja < rad.DatumPocetka)
 			BEGIN
 				ROLLBACK TRANSACTION;
-				PRINT 'Cannot set end day before start day'
+				THROW 51000,  'Cannot set end day before start day', 1;
 			END
 END
 
@@ -457,7 +537,7 @@ AS BEGIN
 	)
 		BEGIN
 			ROLLBACK TRANSACTION;
-			PRINT 'Cannot change work dates when job is finished'
+			THROW 51000,  'Cannot change work dates when job is finished', 1;
 		END
 	
 END
@@ -482,7 +562,7 @@ AS BEGIN
 	)
 		BEGIN
 			ROLLBACK TRANSACTION;
-			PRINT 'Not allowed to work on two places'
+			THROW 51000,  'Not allowed to work on two places', 1;
 		END
 
 	ELSE
@@ -490,7 +570,8 @@ AS BEGIN
 		UPDATE r 
 		SET r.RadiTrenutnoNaPoslu = 1
 		FROM Radnik r
-		JOIN inserted i on i.IDRadnik = r.ID;
+		JOIN inserted i on i.IDRadnik = r.ID
+		WHERE i.datumKraja IS NULL;
 	END
 
 END
@@ -510,8 +591,8 @@ AS BEGIN
 		AND i.Magacin IS NOT NULL
 	)
 		BEGIN
-			ROLLBACK TRANSACTION
-			PRINT 'Not allowed to work two jobs'
+			ROLLBACK TRANSACTION;
+			THROW 51000,  'Not allowed to work two jobs', 1;
 		END
 
 	ELSE
@@ -538,7 +619,7 @@ AS BEGIN
 	)
 		BEGIN
 			ROLLBACK TRANSACTION;
-			PRINT 'Not allowed to change start date of finished job'
+			THROW 51000,  'Not allowed to change start date of finished job', 1;
 		END
 
 	ELSE
@@ -548,14 +629,14 @@ AS BEGIN
 			)
 			BEGIN
 				ROLLBACK TRANSACTION;
-				PRINT 'Cannot set end date before start date'
+				THROW 51000,  'Cannot set end date before start date', 1;
 			END
 
 END
 
 
 -- dont reopen job
-GO
+go
 CREATE TRIGGER PosaoReopen ON [Posao]
 AFTER INSERT, UPDATE, DELETE
 AS BEGIN
@@ -563,12 +644,12 @@ AS BEGIN
 	IF EXISTS(
 		SELECT i.ID from inserted i
 		JOIN deleted d ON i.ID = d.ID
-		WHERE i.Status = 'Z'
-		AND d.Status = 'U'
+		WHERE i.Status = 'U'
+		AND d.Status = 'Z'
 	)
 	BEGIN
 		ROLLBACK TRANSACTION;
-		PRINT 'Not allowed to reopen jobs';
+		THROW 51000,  'Not allowed to reopen jobs', 1;
 	END
 
 END
@@ -599,13 +680,12 @@ AS BEGIN
 
 		UPDATE r
 		SET r.UkupnoIsplacenIznos = r.UkupnoIsplacenIznos + 
-			r.prosecnaocena * norma.cena * datediff(day, rad.DatumPocetka, rad.DatumKraja)/datediff(day, posao.DatumPocetka, posao.DatumKraja)
+			1.0 * r.prosecnaocena  * (datediff(day, rad.DatumPocetka, rad.DatumKraja)+1)/(datediff(day, posao.DatumPocetka, posao.DatumKraja)+1) * norma.plata
 		FROM Radnik r
 		JOIN [RadNaPoslu] rad ON r.ID = rad.IDRadnik
 		JOIN [NormaUgradnogDela] norma ON norma.ID = @idnorma
 		JOIN [Posao] posao ON posao.ID = @idposao
 		WHERE rad.IDPosao = @idposao;
-
 
 		FETCH NEXT FROM @cursor INTO @idposao, @idnorma;
 	END
@@ -622,7 +702,7 @@ AS BEGIN
 	UPDATE r
 	SET r.UkupnoIsplacenIznos = r.UkupnoIsplacenIznos + m.plata
 	FROM Radnik r
-	JOIN Magacin m on m.ID = @idmagacin
+	JOIN Magacin m on r.Magacin = m.ID
 	AND m.ID = @idmagacin
 	
 END
@@ -650,9 +730,90 @@ AS BEGIN
 	)
 	BEGIN
 		ROLLBACK TRANSACTION;
-		PRINT 'Cannot delete magacin if there is some Roba or Zaposleni'
+		THROW 51000,  'Cannot delete magacin if there is some Roba or Zaposleni', 1;
 	END
+END
 
+
+GO
+CREATE TRIGGER UpdateSef ON [Magacin]
+AFTER INSERT
+AS BEGIN
+	UPDATE rad
+	SET rad.Magacin = mag.ID
+	FROM Radnik rad
+	JOIN inserted mag ON mag.Sef = rad.ID;
+END
+
+GO
+CREATE PROCEDURE PovecajRobuJedinica @idmagacin int, @idRoba int, @jedinica int
+AS BEGIN
+	if EXISTS(
+		SELECT * FROM SadrziJedinica
+		WHERE IDMagacin = @idmagacin
+		AND IDRoba = @idroba
+	)
+	BEGIN
+		UPDATE SadrziJedinica SET Jedinica = Jedinica + @jedinica
+		WHERE IDMagacin = @idmagacin
+		AND IDRoba = @idroba
+	END
+	ELSE BEGIN
+		INSERT INTO SadrziJedinica (IDMagacin, IDRoba, Jedinica)
+		VALUES (@idmagacin, @idroba, @jedinica)
+	END
+END
+
+
+GO
+CREATE PROCEDURE PovecajRobuKolicina @idmagacin int, @idRoba int, @kolicina decimal(10,3)
+AS BEGIN
+	if EXISTS(
+		SELECT * FROM SadrziKolicinu
+		WHERE IDMagacin = @idmagacin
+		AND IDRoba = @idroba
+	)
+	BEGIN
+		UPDATE SadrziKolicinu SET Kolicina = Kolicina + @kolicina
+		WHERE IDMagacin = @idmagacin
+		AND IDRoba = @idroba
+	END
+	ELSE BEGIN
+		INSERT INTO SadrziKolicinu (IDMagacin, IDRoba, Kolicina)
+		VALUES (@idmagacin, @idroba, @kolicina)
+	END
+END
+
+
+
+GO
+CREATE PROCEDURE SmanjiRobuJedinica @idmagacin int, @idRoba int, @jedinica int
+AS BEGIN
+
+	UPDATE SadrziJedinica SET Jedinica = Jedinica - @jedinica
+	WHERE IDMagacin = @idmagacin
+	AND IDRoba = @idroba
 
 END
 
+
+GO
+CREATE PROCEDURE SmanjiRobuKolicina @idmagacin int, @idRoba int, @kolicina decimal(10,3)
+AS BEGIN
+
+	UPDATE SadrziKolicinu SET Kolicina = Kolicina - @kolicina
+	WHERE IDMagacin = @idmagacin
+	AND IDRoba = @idroba
+
+END
+
+
+GO
+CREATE PROCEDURE SviRadniciZavrsavaju @idposla int, @datumKraja datetime
+AS BEGIN
+	UPDATE rad SET rad.datumKraja = @datumKraja
+	FROM RadNaPoslu rad
+	JOIN Posao posao ON posao.ID = rad.IDPosao
+	WHERE rad.datumKraja IS NULL
+	AND posao.ID = @idposla
+END

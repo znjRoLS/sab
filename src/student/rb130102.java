@@ -87,8 +87,8 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiZaposlenog(String ime, String prezime, String jmbg, String pol, String ziroRacun, String email, String brojTelefona) {
-        return dbhelper.insert("Radnik", new String[] {"Ime", "Prezime", "jmbg", "pol", "ziroRacun", "email", "brojTelefona"},
-                new String[]{ime, prezime, jmbg, pol, ziroRacun, email, brojTelefona});
+        return dbhelper.insert("Radnik", new String[] {"Ime", "Prezime", "jmbg", "pol", "ziroRacun", "email", "Telefon", "ProsecnaOcena"},
+                new String[]{ime, prezime, jmbg, pol, ziroRacun, email, brojTelefona, "10"});
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -107,7 +107,7 @@ public class rb130102 extends Funkcionalnosti{
         return new BigDecimal(
                 dbhelper.select(
                         "Radnik",
-                        new String[]{"UkupanIsplacenIznos"},
+                        new String[]{"UkupnoIsplacenIznos"},
                         new String[]{"ID"},
                         new String[]{String.valueOf(idZaposleni
                         )}).get(0).get(0)
@@ -134,7 +134,11 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int dohvatiBrojTrenutnoZaduzeneOpremeZaZaposlenog(int idZaposleni) {
-        return dbhelper.select("Zaduzenje", new String[]{"ID"}, new String[]{"IDRadnik"}, new String[]{String.valueOf(idZaposleni)}).size();
+        return dbhelper.select("Zaduzenje",
+                new String[]{"ID"},
+                new String[]{"IDRadnik", "DatumRazduzenja"},
+                new String[]{String.valueOf(idZaposleni), "null"}
+                ).size();
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -156,7 +160,7 @@ public class rb130102 extends Funkcionalnosti{
     @Override
     public int unesiMagacin(int idSef, BigDecimal plata, int idGradiliste) {
         return dbhelper.insert("Magacin",
-                new String[]{"ID", "Plata", "Gradiliste"},
+                new String[]{"Sef", "Plata", "Gradiliste"},
                 new String[]{String.valueOf(idSef), String.valueOf(plata.floatValue()), String.valueOf(idGradiliste)});
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -174,24 +178,30 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int izmeniSefaZaMagacin(int idMagacin, int idSefNovo) {
-        return dbhelper.update("Magacin",
+        if ( dbhelper.update("Magacin",
                 new String[] {"Sef"},
                 new String[] {String.valueOf(idSefNovo)},
                 new String[] {"ID"},
                 new String[] {String.valueOf(idMagacin)}
-                );
+                )) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int izmeniPlatuZaMagacin(int idMagacin, BigDecimal plataNovo) {
-        return dbhelper.update("Magacin",
+        if ( dbhelper.update("Magacin",
                 new String[] {"plata"},
                 new String[] {String.valueOf(plataNovo.floatValue())},
                 new String[] {"ID"},
                 new String[] {String.valueOf(idMagacin)}
-        );
+        )) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -223,7 +233,7 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiRobuUMagacinPoKolicini(int idRoba, int idMagacin, BigDecimal kolicina) {
-        if( dbhelper.call("PovecajRobuJedinica",
+        if( dbhelper.call("PovecajRobuKolicina",
                 new String[] {String.valueOf(idMagacin), String.valueOf(idRoba), String.valueOf(kolicina.floatValue())})) {
             return 0;
         }
@@ -234,7 +244,7 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiRobuUMagacinPoBrojuJedinica(int idRoba, int idMagacin, int brojJedinica) {
-        if (dbhelper.call("PovecajRobuKolicina",
+        if (dbhelper.call("PovecajRobuJedinica",
                 new String[] {String.valueOf(idMagacin), String.valueOf(idRoba), String.valueOf(brojJedinica)})) {
             return 0;
         }
@@ -312,7 +322,7 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int unesiRobu(String naziv, String kod, int idTipRobe) {
-        return dbhelper.insert("Roba", new String[]{"Naziv", "Kod", "TipRobe"}, new String[]{naziv, kod, String.valueOf(idTipRobe)});
+        return dbhelper.insert("Roba", new String[]{"Naziv", "Kod", "Tip"}, new String[]{naziv, kod, String.valueOf(idTipRobe)});
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -342,22 +352,28 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int zaposleniRadiUMagacinu(int idZaposleni, int idMagacin) {
-        return dbhelper.update("Radnik",
-                new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleni)},
+        if( dbhelper.update("Radnik",
                 new String[]{"Magacin"},
-                new String[]{String.valueOf(idMagacin)}) ;
+                new String[]{String.valueOf(idMagacin)},
+                new String[]{"ID"},
+                new String[]{String.valueOf(idZaposleni)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int zaposleniNeRadiUMagacinu(int idZaposleni) {
-        return dbhelper.update("Radnik",
-                new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleni)},
+        if (dbhelper.update("Radnik",
                 new String[]{"Magacin"},
-                new String[]{"null"}) ;
+                new String[]{"null"},
+                new String[]{"ID"},
+                new String[]{String.valueOf(idZaposleni)})) {
+            return 0;
+        }
+        return -1;
 
        // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -365,9 +381,9 @@ public class rb130102 extends Funkcionalnosti{
     @Override
     public int zaposleniZaduzujeOpremu(int idZaposlenogKojiZaduzuje, int idMagacin, int idRoba, Date datumZaduzenja, String napomena) {
         return dbhelper.insert("Zaduzenje",
-                new String[]{"IDRadnik", "IDMagacin", "IDRoba", "DatumZaduzenja", "Napomena"},
+                new String[]{"IDRadnik", "IDMagacin", "IDRoba", "DatumZaduzenja", "Napomena", "Jedinica"},
                 new String[]{String.valueOf(idZaposlenogKojiZaduzuje), String.valueOf(idMagacin), String.valueOf(idRoba),
-                    datumZaduzenja.toString(), napomena}
+                    datumZaduzenja.toString(), napomena, "1"}
                 );
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -375,12 +391,15 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int zaposleniRazduzujeOpremu(int idZaduzenjaOpreme, Date datumRazduzenja) {
-        return dbhelper.update(
+        if (dbhelper.update(
                 "Zaduzenje",
-                new String[]{"ID"},
-                new String[] {String.valueOf(idZaduzenjaOpreme)},
                 new String[]{"datumRazduzenja"},
-                new String[]{datumRazduzenja.toString()});
+                new String[]{datumRazduzenja.toString()},
+                new String[]{"ID"},
+                new String[] {String.valueOf(idZaduzenjaOpreme)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -450,7 +469,7 @@ public class rb130102 extends Funkcionalnosti{
     @Override
     public int unesiPosao(int idNormaUgradnogDela, int idSprat, Date datumPocetka) {
         return dbhelper.insert("Posao",
-                new String[]{"IDNorma", "IDSprat", "DatumOd"},
+                new String[]{"IDNorma", "IDSprat", "DatumPocetka"},
                 new String[]{String.valueOf(idNormaUgradnogDela), String.valueOf(idSprat), datumPocetka.toString()});
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -468,22 +487,31 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int izmeniDatumPocetkaZaPosao(int idPosao, Date datumPocetka) {
-        return dbhelper.update("Posao",
-                new String[]{"DatumOd"},
+        if (dbhelper.update("Posao",
+                new String[]{"DatumPocetka"},
                 new String[]{datumPocetka.toString()},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idPosao)});
+                new String[]{String.valueOf(idPosao)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int zavrsiPosao(int idPosao, Date datumKraja) {
-        return dbhelper.update("Posao",
-                new String[]{"DatumDo", "Status"},
+
+        dbhelper.call("SviRadniciZavrsavaju", new String[]{String.valueOf(idPosao),datumKraja.toString()});
+
+        if (dbhelper.update("Posao",
+                new String[]{"DatumKraja", "Status"},
                 new String[]{datumKraja.toString(), "Z"},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idPosao)});
+                new String[]{String.valueOf(idPosao)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -491,7 +519,7 @@ public class rb130102 extends Funkcionalnosti{
     @Override
     public int zaposleniRadiNaPoslu(int idZaposleni, int idPosao, Date datumPocetka) {
         return dbhelper.insert("RadNaPoslu",
-                new String[]{"IDRadnik", "IDPosao", "DatumOd"},
+                new String[]{"IDRadnik", "IDPosao", "DatumPocetka"},
                 new String[]{String.valueOf(idZaposleni), String.valueOf(idPosao), datumPocetka.toString()});
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -499,11 +527,14 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int zaposleniJeZavrsioSaRadomNaPoslu(int idZaposleniNaPoslu, Date datumKraja) {
-        return dbhelper.update("RadNaPoslu",
-                new String[]{"DatumDo"},
+        if ( dbhelper.update("RadNaPoslu",
+                new String[]{"DatumKraja"},
                 new String[]{datumKraja.toString()},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})) {
+            return 0;
+        }
+        return -1;
 
         //
         // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -511,55 +542,70 @@ public class rb130102 extends Funkcionalnosti{
 
     @Override
     public int izmeniDatumPocetkaRadaZaposlenogNaPoslu(int idZaposleniNaPoslu, Date datumPocetkaNovo) {
-        return dbhelper.update("RadNaPoslu",
-                new String[]{"DatumOd"},
+        if (dbhelper.update("RadNaPoslu",
+                new String[]{"DatumPocetka"},
                 new String[]{datumPocetkaNovo.toString()},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int izmeniDatumKrajaRadaZaposlenogNaPoslu(int idZaposleniNaPoslu, Date datumKrajaNovo) {
-        return dbhelper.update("RadNaPoslu",
-                new String[]{"DatumDo"},
+        if (dbhelper.update("RadNaPoslu",
+                new String[]{"DatumKraja"},
                 new String[]{datumKrajaNovo.toString()},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})){
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int zaposleniDobijaOcenu(int idZaposleniNaPoslu, int ocena) {
-        return dbhelper.update("RadNaPoslu",
+        if (dbhelper.update("RadNaPoslu",
                 new String[]{"Ocena"},
                 new String[]{String.valueOf(ocena)},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})) {
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int obrisiOcenuZaposlenom(int idZaposleniNaPoslu) {
-        return dbhelper.update("RadNaPoslu",
+         if (dbhelper.update("RadNaPoslu",
                 new String[]{"ocena"},
                 new String[]{"null"},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})) {
+             return 0;
+         }
+         return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public int izmeniOcenuZaZaposlenogNaPoslu(int idZaposleniNaPoslu, int ocenaNovo) {
-        return dbhelper.update("RadNaPoslu",
+        if (dbhelper.update("RadNaPoslu",
                 new String[]{"ocena"},
                 new String[]{String.valueOf(ocenaNovo)},
                 new String[]{"ID"},
-                new String[]{String.valueOf(idZaposleniNaPoslu)});
+                new String[]{String.valueOf(idZaposleniNaPoslu)})){
+            return 0;
+        }
+        return -1;
 
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
